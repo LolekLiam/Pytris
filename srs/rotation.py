@@ -2,14 +2,13 @@ from typing import List, Literal
 
 TetrominGrid = List[List[Literal[0, 1]]]
 
-
 class Tetromino:
     def __init__(self, grid_rotations: List[TetrominGrid], color: str, x=0, y=0):
+        if not grid_rotations:
+            raise ValueError("grid_rotations cannot be empty")
         self.grid_rotations = grid_rotations
         self.rotation = 0
         self.color = color
-        self.x = x
-        self.y = y
         self.x = x
         self.y = y
 
@@ -29,10 +28,8 @@ class Tetromino:
         return self.grid_rotations[self.rotation % len(self.grid_rotations)]
 
     def peek_next_grid(self, backward=False) -> TetrominGrid:
-        self.rotate(backward)
-        next_grid = self.current_grid()
-        self.rotate(not backward)
-        return next_grid
+        next_rotation = self.rotation + (-1 if backward else 1)
+        return self.grid_rotations[next_rotation % len(self.grid_rotations)]
 
     def rotate(self, backward=False) -> None:
         self.rotation += 1 if not backward else -1
@@ -212,12 +209,5 @@ class TetrominoZ(Tetromino):
         ], 'red4', x, y)
 
 
-tetromin_list = [
-    TetrominoI,
-    TetrominoO,
-    TetrominoT,
-    TetrominoJ,
-    TetrominoL,
-    TetrominoS,
-    TetrominoZ
-]
+tetromin_list = Tetromino.__subclasses__()
+

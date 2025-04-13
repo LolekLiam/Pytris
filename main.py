@@ -3,8 +3,7 @@ import pygame
 import random
 import time
 
-from typing import List, Literal
-from srs.rotation import TetrominoI, TetrominoJ, TetrominoL, TetrominoO, TetrominoS, TetrominoT, TetrominoZ
+from srs.rotation import TetrominoI, TetrominoJ, TetrominoL, TetrominoO, TetrominoS, TetrominoT, TetrominoZ, TetrominGrid, Tetromino
 
 pygame.init()
 
@@ -30,8 +29,6 @@ SIDEBAR_WIDTH = 200
 SCREEN_WIDTH = BLOCK_SIZE * GRID_WIDTH + SIDEBAR_WIDTH
 SCREEN_HEIGHT = BLOCK_SIZE * GRID_HEIGHT
 
-SHAPE_COLORS = [CYAN, YELLOW, PURPLE, BLUE, ORANGE, GREEN, RED]
-
 move_delay = 150
 move_interval = 50
 last_move_time = 0
@@ -42,49 +39,6 @@ def play(sound, start, end):
     time.sleep(end - start)
     # pygame.mixer.music.stop()
     return True
-
-
-from typing import List, Literal
-
-TetrominGrid = List[List[Literal[0, 1]]]
-
-
-class Tetromino:
-    def __init__(self, grid_rotations: List[TetrominGrid], color: str):
-        self.grid_rotations = grid_rotations
-        self.rotation = 0
-        self.color = color
-        self.width = len(self.current_grid()[0])
-        self.height = len(self.current_grid())
-
-    def width(self) -> int:
-        return len(self.current_grid()[0])
-
-    def height(self) -> int:
-        return len(self.current_grid())
-
-    def defined_rotations(self) -> int:
-        return len(self.grid_rotations)
-
-    def current_rotation_i(self) -> int:
-        return self.rotation % len(self.grid_rotations)
-
-    def current_grid(self) -> TetrominGrid:
-        return self.grid_rotations[self.rotation % len(self.grid_rotations)]
-
-    def peek_next_grid(self, backward=False) -> TetrominGrid:
-        self.rotate(backward)
-        next_grid = self.current_grid()
-        self.rotate(not backward)
-        return next_grid
-
-    def rotate(self, backward=False) -> None:
-        self.rotation += 1 if not backward else -1
-
-    def debug_print(self) -> None:
-        for row in self.current_grid():
-            print(row)
-
 
 class TetrisGame:
     def __init__(self):
@@ -99,6 +53,7 @@ class TetrisGame:
         self.font = pygame.font.SysFont(None, 36)
         self.small_font = pygame.font.SysFont(None, 24)
         self.lvlup_sound = pygame.mixer.Sound("lvlup.wav")
+        self.last_move_time = pygame.time.get_ticks()
         self.reset_game()
 
     def reset_game(self):
@@ -350,8 +305,8 @@ class TetrisGame:
                 pygame.draw.rect(
                     self.screen,
                     color,
-                    [(BLOCK_SIZE) * x,
-                     (BLOCK_SIZE) * y,
+                    [BLOCK_SIZE * x,
+                     BLOCK_SIZE * y,
                      BLOCK_SIZE - GRID_MARGIN,
                      BLOCK_SIZE - GRID_MARGIN]
                 )
@@ -387,8 +342,8 @@ class TetrisGame:
                     pygame.draw.rect(
                         self.screen,
                         self.current_piece.color,
-                        [(BLOCK_SIZE) * (self.current_piece.x + j),
-                         (BLOCK_SIZE) * (self.current_piece.y + i),
+                        [BLOCK_SIZE * (self.current_piece.x + j),
+                         BLOCK_SIZE * (self.current_piece.y + i),
                          BLOCK_SIZE - GRID_MARGIN,
                          BLOCK_SIZE - GRID_MARGIN]
                     )
@@ -439,23 +394,6 @@ class TetrisGame:
         self.screen.blit(lines_label, (GRID_WIDTH * BLOCK_SIZE + 20, 400))
         self.screen.blit(lines_value, (GRID_WIDTH * BLOCK_SIZE + 20, 440))
 
-        """
-        controls = [
-            "Controls:",
-            "Left/Right: Move",
-            "Up: Rotate",
-            "Down: Soft Drop",
-            "Space: Hard Drop",
-            "P: Pause",
-            "R: Restart"
-        ]
-
-        y_pos = 450
-        for text in controls:
-            control_text = self.small_font.render(text, True, WHITE)
-            self.screen.blit(control_text, (GRID_WIDTH * BLOCK_SIZE + 20, y_pos))
-            y_pos += 25"""
-
     def draw_game_over(self):
         overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         overlay.set_alpha(180)
@@ -465,6 +403,7 @@ class TetrisGame:
         game_over_text = self.font.render("GAME OVER", True, WHITE)
         restart_text = self.small_font.render("Press R to restart", True, WHITE)
 
+        # noinspection DuplicatedCode
         self.screen.blit(
             game_over_text,
             (SCREEN_WIDTH // 2 - game_over_text.get_width() // 2,
@@ -479,6 +418,7 @@ class TetrisGame:
     def run(self):
         self.main_menu()
         last_fall_time = time.time()
+        last_move_time = 0
         paused = False
 
         running = True
@@ -544,6 +484,7 @@ class TetrisGame:
                 pause_text = self.font.render("PAUSED", True, WHITE)
                 resume_text = self.small_font.render("Press P to resume", True, WHITE)
 
+                # noinspection DuplicatedCode
                 self.screen.blit(
                     pause_text,
                     (SCREEN_WIDTH // 2 - pause_text.get_width() // 2,
